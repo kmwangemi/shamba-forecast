@@ -1,0 +1,23 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Recent searches: written by the frontend client SDK.
+    // Open for demo purposes - in production, scope writes to an
+    // authenticated user (e.g. match /recentSearches/{id} where
+    // resource.data.uid == request.auth.uid).
+    match /recentSearches/{searchId} {
+      allow read: if true;
+      allow create: if request.resource.data.keys().hasAll(["town", "searchedAt"]);
+      allow update, delete: if false;
+    }
+
+    // Forecast request logs: written only by the backend via the
+    // Firebase Admin SDK, which bypasses these rules entirely.
+    // No client access needed.
+    match /forecastRequests/{logId} {
+      allow read, write: if false;
+    }
+  }
+}

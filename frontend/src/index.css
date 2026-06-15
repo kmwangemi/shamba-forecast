@@ -1,0 +1,40 @@
+@import "tailwindcss";
+
+@theme {
+  /* Palette - "early morning sky over a Rift Valley farm" */
+  --color-sky: #eaf4fb;
+  --color-sky-deep: #2f6690;
+  --color-sky-deep-hover: #244f70;
+  --color-cloud: #ffffff;
+  --color-leaf: #4a7c59;
+  --color-leaf-light: #e6f0e9;
+  --color-amber: #e9a23b;
+  --color-ink: #1f2933;
+  --color-ink-soft: #5a6776;
+  --color-border: #d9e6ee;
+  --color-error-bg: #fdecec;
+  --color-error-text: #9b2c2c;
+
+  --font-display: "Georgia", "Iowan Old Style", serif;
+  --font-body: "Inter", "Segoe UI", system-ui, -apple-system, sans-serif;
+}
+
+html,
+body,
+#root {
+  margin: 0;
+  min-height: 100vh;
+}
+
+body {
+  font-family: var(--font-body);
+  color: var(--color-ink);
+  background: linear-gradient(180deg, var(--color-sky) 0%, #f6fbff 45%, #fdfdfb 100%);
+}
+
+h1,
+h2,
+h3 {
+  font-family: var(--font-display);
+  color: var(--color-sky-deep);
+}
