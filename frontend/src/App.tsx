@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { fetchForecast, fetchAutoLocation } from "./lib/api";
 import { getRecentSearches, recordSearch, type RecentSearch } from "./lib/recentSearches";
 import type { ForecastResponse, SummaryLanguage } from "./types/weather";
+import { t } from "./lib/i18n";
 import SearchBar from "./components/SearchBar";
 import CurrentConditions from "./components/CurrentConditions";
 import ForecastStrip from "./components/ForecastStrip";
@@ -17,8 +18,10 @@ function App() {
   const [error, setError] = useState<string | null>(null);
   const [lang, setLang] = useState<SummaryLanguage>("en");
   const [useAi, setUseAi] = useState(false);
+  const [days, setDays] = useState(7);
   const [recent, setRecent] = useState<RecentSearch[]>([]);
   const [hasAutoFetched, setHasAutoFetched] = useState(false);
+  const [currentQuery, setCurrentQuery] = useState<{ type: 'town' | 'auto'; town?: string } | null>(null);
 
   useEffect(() => {
     getRecentSearches().then(setRecent);
@@ -26,21 +29,41 @@ function App() {
     // Auto-fetch location on first load
     if (!hasAutoFetched && !data && !loading && !error) {
       setHasAutoFetched(true);
+      setCurrentQuery({ type: 'auto' });
       setLoading(true);
-      fetchAutoLocation({ lang, ai: useAi })
+      fetchAutoLocation({ lang, ai: useAi, days })
         .then((result) => setData(result))
         .catch(() => {
           // Silent fail for auto-location, user can still search manually
         })
         .finally(() => setLoading(false));
     }
-  }, [hasAutoFetched, data, loading, error, lang, useAi]);
+  }, [hasAutoFetched, data, loading, error, lang, useAi, days]);
+
+  // Refetch when lang, useAi, or days changes
+  useEffect(() => {
+    if (!currentQuery) return;
+    
+    setLoading(true);
+    if (currentQuery.type === 'town' && currentQuery.town) {
+      fetchForecast(currentQuery.town, { lang, ai: useAi, days })
+        .then((result) => setData(result))
+        .catch((err) => setError(err instanceof Error ? err.message : t("errorGeneric", lang)))
+        .finally(() => setLoading(false));
+    } else if (currentQuery.type === 'auto') {
+      fetchAutoLocation({ lang, ai: useAi, days })
+        .then((result) => setData(result))
+        .catch(() => {})
+        .finally(() => setLoading(false));
+    }
+  }, [lang, useAi, days]); // Deliberately omit currentQuery to avoid double-fetching on search
 
   async function handleSearch(town: string) {
     setLoading(true);
     setError(null);
+    setCurrentQuery({ type: 'town', town });
     try {
-      const result = await fetchForecast(town, { lang, ai: useAi });
+      const result = await fetchForecast(town, { lang, ai: useAi, days });
       setData(result);
       await recordSearch(town);
       setRecent(await getRecentSearches());
@@ -60,15 +83,15 @@ function App() {
             ⛅
           </span>
           <div>
-            <h1 className="text-2xl tracking-tight">Shamba Forecast</h1>
+            <h1 className="text-2xl tracking-tight">{t("title", lang)}</h1>
             <p className="mt-0.5 text-sm text-ink-soft">
-              Hyperlocal weather and farm guidance, powered by WeatherAI
+              {t("subtitle", lang)}
             </p>
           </div>
         </div>
         <div className="flex gap-4">
           <div className="flex flex-col gap-1 text-sm text-ink-soft">
-            <label htmlFor="ai-toggle">AI Advice</label>
+            <label htmlFor="ai-toggle">{t("aiAdvice", lang)}</label>
             <div className="flex items-center h-8">
               <label className="relative inline-flex items-center cursor-pointer">
                 <input 
@@ -79,12 +102,12 @@ function App() {
                   onChange={(e) => setUseAi(e.target.checked)}
                 />
                 <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-sky-deep"></div>
-                <span className="ml-2 text-sm font-medium text-ink">{useAi ? "On" : "Off"}</span>
+                <span className="ml-2 text-sm font-medium text-ink">{useAi ? t("on", lang) : t("off", lang)}</span>
               </label>
             </div>
           </div>
           <div className="flex flex-col gap-1 text-sm text-ink-soft">
-            <label htmlFor="lang-select">Language</label>
+            <label htmlFor="lang-select">{t("language", lang)}</label>
             <select
               id="lang-select"
               value={lang}
@@ -95,14 +118,27 @@ function App() {
               <option value="sw">Kiswahili</option>
             </select>
           </div>
+          <div className="flex flex-col gap-1 text-sm text-ink-soft">
+            <label htmlFor="days-select">{t("forecastDays", lang)}</label>
+            <select
+              id="days-select"
+              value={days}
+              onChange={(e) => setDays(Number(e.target.value))}
+              className="rounded-lg border border-border bg-cloud px-2 py-1.5 text-sm text-ink"
+            >
+              <option value={1}>{t("day1", lang)}</option>
+              <option value={3}>{t("day3", lang)}</option>
+              <option value={7}>{t("day7", lang)}</option>
+            </select>
+          </div>
         </div>
       </header>
 
       <main className="flex flex-col gap-5">
-        <SearchBar onSearch={handleSearch} loading={loading} />
+        <SearchBar onSearch={handleSearch} loading={loading} lang={lang} />
 
         <div className="flex flex-wrap items-center gap-2 text-sm text-ink-soft">
-          <span>Try:</span>
+          <span>{t("tryPrompt", lang)}</span>
           {DEFAULT_TOWNS.map((town) => (
             <button
               key={town}
@@ -116,38 +152,35 @@ function App() {
           ))}
         </div>
 
-        <RecentSearches searches={recent} onSelect={handleSearch} disabled={loading} />
+        <RecentSearches searches={recent} onSelect={handleSearch} disabled={loading} lang={lang} />
 
         {error && <StatusBanner type="error" message={error} />}
-        {loading && <StatusBanner type="loading" message="Fetching forecast…" />}
+        {loading && <StatusBanner type="loading" message={t("fetching", lang)} />}
 
         {data && !loading && (
           <>
             {data.meta.cache === "hit" && (
               <StatusBanner
                 type="info"
-                message="Served from cache - this location was fetched recently."
+                message={t("cacheHit", lang)}
               />
             )}
-            <CurrentConditions location={data.location} weather={data.weather} />
-            <ForecastStrip weather={data.weather} />
-            <AiSummary weather={data.weather} />
+            <CurrentConditions location={data.location} weather={data.weather} lang={lang} />
+            <ForecastStrip weather={data.weather} lang={lang} />
+            <AiSummary weather={data.weather} lang={lang} />
           </>
         )}
 
         {!data && !loading && !error && (
           <StatusBanner
             type="empty"
-            message="Search for a town or pick one above to see the forecast."
+            message={t("emptySearch", lang)}
           />
         )}
       </main>
 
       <footer className="mt-auto border-t border-border pt-4 text-center text-xs text-ink-soft">
-        <p>
-          Data from the WeatherAI API. Built as a demo integration showing caching,
-          geocoding, Firestore-backed history, and resilient error handling.
-        </p>
+        <p>{t("footer", lang)}</p>
       </footer>
     </div>
   );

@@ -1,7 +1,9 @@
-import type { DailyForecastDay, WeatherResponse } from "../types/weather";
+import type { DailyForecastDay, WeatherResponse, SummaryLanguage } from "../types/weather";
+import { t } from "../lib/i18n";
 
 interface ForecastStripProps {
   weather: WeatherResponse;
+  lang: SummaryLanguage;
 }
 
 /**
@@ -10,7 +12,7 @@ interface ForecastStripProps {
  * Reads from `weather.daily` or `weather.forecast` (array of day objects),
  * with defensive field-name fallbacks - see note in CurrentConditions.tsx.
  */
-export default function ForecastStrip({ weather }: ForecastStripProps) {
+export default function ForecastStrip({ weather, lang }: ForecastStripProps) {
   const forecastField = weather.forecast;
   const days: DailyForecastDay[] | undefined = Array.isArray(weather.daily)
     ? weather.daily
@@ -24,7 +26,7 @@ export default function ForecastStrip({ weather }: ForecastStripProps) {
 
   return (
     <section>
-      <h3 className="mb-2.5 text-base">7-day outlook</h3>
+      <h3 className="mb-2.5 text-base">{days.length}-day {t("outlook", lang)}</h3>
       <div className="flex gap-2.5 overflow-x-auto pb-1">
         {days.map((day, idx) => {
           const date = day.date || (typeof day.day === "string" ? day.day : undefined);
