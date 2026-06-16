@@ -1,6 +1,6 @@
 import { Router, type Request, type Response, type NextFunction } from "express";
 import { geocodeLocation, ApiError } from "../services/geocodingService";
-import { getWeather } from "../services/weatherAiClient";
+import { getWeather, getWeatherGeo } from "../services/weatherAiClient";
 import { logForecastRequest } from "../services/forecastLogService";
 import { TTLCache } from "../utils/ttlCache";
 
@@ -16,6 +16,54 @@ export interface ForecastPayload {
 
 export function createForecastRouter(cache: TTLCache<ForecastPayload>): Router {
   const router = Router();
+
+  /**
+   * GET /api/forecast/auto
+   * Automatically detect user's location based on IP address.
+   */
+  router.get("/forecast/auto", async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const {
+        days = "7",
+        units = "metric",
+        lang = "en",
+        ai = "false",
+      } = req.query as Record<string, string | undefined>;
+
+      const aiBool = ai !== "false";
+      
+      // Get actual client IP, fallback to auto
+      const clientIp = (req.headers["x-forwarded-for"] || req.socket.remoteAddress || "auto").toString().split(",")[0].trim();
+      
+      const { data, geo, rateLimit } = await getWeatherGeo({
+        ip: clientIp,
+        days: Number(days),
+        ai: aiBool,
+        units,
+        lang,
+      });
+
+      const displayName = [geo.city, geo.region, geo.country].filter(Boolean).join(", ");
+      
+      // Assuming data includes lat/lon in current or location
+      const lat = (data as any)?.location?.lat || 0;
+      const lon = (data as any)?.location?.lon || 0;
+
+      const payload: ForecastPayload = {
+        location: { name: displayName || "Auto Location", lat, lon },
+        weather: data,
+        meta: {
+          cache: "miss",
+          rateLimit,
+          fetchedAt: new Date().toISOString(),
+        },
+      };
+
+      res.json(payload);
+    } catch (err) {
+      next(err);
+    }
+  });
 
   /**
    * GET /api/forecast?town=Bomet

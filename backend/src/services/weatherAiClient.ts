@@ -41,6 +41,20 @@ export interface GetWeatherResult {
   rateLimit: RateLimitInfo;
 }
 
+export interface GetWeatherGeoParams {
+  ip: string;
+  days?: number;
+  ai?: boolean;
+  units?: string;
+  lang?: string;
+}
+
+export interface GetWeatherGeoResult {
+  data: Record<string, unknown>;
+  geo: Record<string, string>; // From response headers X-Country, X-Region, etc.
+  rateLimit: RateLimitInfo;
+}
+
 /** Sleep helper for backoff. */
 const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
@@ -112,6 +126,66 @@ export async function getWeather(
       }
 
       // Out of retries or unknown error - surface a 502/503.
+      throw new ApiError(
+        `WeatherAI API unavailable after ${attempt + 1} attempt(s): ${err.message}`,
+        status === 503 ? 503 : 502
+      );
+    }
+  }
+}
+
+/**
+ * Fetch weather using IP geo-detection.
+ */
+export async function getWeatherGeo(
+  { ip, days = 7, ai = false, units = "metric", lang = "en" }: GetWeatherGeoParams,
+  maxRetries = 2
+): Promise<GetWeatherGeoResult> {
+  let attempt = 0;
+
+  while (true) {
+    try {
+      const res = await client.get("/v1/weather-geo", {
+        params: { ip, days, ai, units, lang },
+      });
+
+      const headers = res.headers as Record<string, unknown>;
+      return {
+        data: res.data,
+        geo: {
+          country: headers["x-country"] as string || "",
+          region: headers["x-region"] as string || "",
+          city: headers["x-city"] as string || "",
+        },
+        rateLimit: extractRateLimit(headers),
+      };
+    } catch (err) {
+      if (!axios.isAxiosError(err)) {
+        throw new ApiError(`Unexpected error: ${(err as Error).message}`, 500);
+      }
+
+      const status = err.response?.status;
+      if (status === 401 || status === 403 || status === 429 || status === 400) {
+        const message =
+          (err.response?.data as { message?: string; error?: string })?.message ||
+          (err.response?.data as { message?: string; error?: string })?.error ||
+          `WeatherAI API error (${status})`;
+
+        const apiError = new ApiError(message, status);
+        (apiError as ApiError & { rateLimit?: RateLimitInfo }).rateLimit = extractRateLimit(
+          (err.response?.headers as Record<string, unknown>) || {}
+        );
+        throw apiError;
+      }
+
+      const isTransient = status === 500 || status === 503 || !err.response;
+      if (isTransient && attempt < maxRetries) {
+        const backoffMs = 500 * 2 ** attempt;
+        await sleep(backoffMs);
+        attempt += 1;
+        continue;
+      }
+
       throw new ApiError(
         `WeatherAI API unavailable after ${attempt + 1} attempt(s): ${err.message}`,
         status === 503 ? 503 : 502
