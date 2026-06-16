@@ -1,6 +1,4 @@
-import type { ApiErrorResponse, ForecastResponse, SummaryLanguage } from "../types/weather";
-
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:5000";
+import type { ForecastResponse, SummaryLanguage } from "../types/weather";
 
 interface FetchForecastOptions {
   lang?: SummaryLanguage;
@@ -96,12 +94,15 @@ export async function fetchAutoLocation(
 }
 
 /* --- REAL IMPLEMENTATION SAVED FOR REVERT ---
+// import type { ApiErrorResponse } from "../types/weather";
+// const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:5000";
+
 export async function fetchForecast(
   town: string,
   options: FetchForecastOptions = {}
 ): Promise<ForecastResponse> {
   const { lang = "en", units = "metric", ai, days = 7, lat, lon } = options;
-  const url = new URL("/api/forecast", API_BASE_URL);
+  const url = new URL("/api/forecast", import.meta.env.VITE_API_BASE_URL || "http://localhost:5000");
   url.searchParams.set("town", town);
   url.searchParams.set("lang", lang);
   url.searchParams.set("units", units);
@@ -132,7 +133,7 @@ export async function fetchForecast(
 export async function fetchAutoLocation(
   { lang = "en", units = "metric", ai = false, days = 7 }: FetchForecastOptions = {}
 ): Promise<ForecastResponse> {
-  const url = new URL("/api/forecast/auto", API_BASE_URL);
+  const url = new URL("/api/forecast/auto", import.meta.env.VITE_API_BASE_URL || "http://localhost:5000");
   url.searchParams.set("lang", lang);
   url.searchParams.set("units", units);
   url.searchParams.set("days", String(days));

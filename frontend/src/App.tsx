@@ -178,7 +178,7 @@ function App() {
 
         {mapCoords && (
           <div className={loading ? "opacity-60 transition-opacity pointer-events-none" : "transition-opacity"}>
-            <WeatherMap lat={mapCoords[0]} lon={mapCoords[1]} name={data?.location?.name !== "Auto Location" ? data?.location?.name : "Nairobi"} />
+            <WeatherMap lat={mapCoords[0]} lon={mapCoords[1]} name={data?.location?.name !== "Auto Location" ? (data?.location?.name ?? undefined) : "Nairobi"} />
           </div>
         )}
 
