@@ -24,7 +24,7 @@ export default function TemperatureChart({ weather, lang }: TemperatureChartProp
     const dayObj = typeof day.day === "object" ? day.day : undefined;
     const max = day.temp_max ?? day.maxtemp_c ?? dayObj?.maxtemp_c;
     const min = day.temp_min ?? day.mintemp_c ?? dayObj?.mintemp_c;
-    const rain = day.chance_of_rain ?? day.daily_chance_of_rain ?? day.precipitation_probability ?? dayObj?.daily_chance_of_rain ?? 0;
+    const rain = day.chance_of_rain ?? day.daily_chance_of_rain ?? day.precipitation_probability ?? (dayObj as any)?.daily_chance_of_rain ?? 0;
 
     const formattedDate = dateStr 
       ? new Date(dateStr).toLocaleDateString(lang === 'sw' ? 'sw-KE' : 'en-US', { weekday: "short" })

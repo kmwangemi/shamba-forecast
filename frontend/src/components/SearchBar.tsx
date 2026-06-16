@@ -1,4 +1,4 @@
-import { useState, type FormEvent } from "react";
+import { type FormEvent } from "react";
 import AsyncSelect from "react-select/async";
 
 import type { SummaryLanguage } from "../types/weather";
