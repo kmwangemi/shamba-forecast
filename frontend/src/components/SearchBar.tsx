@@ -4,15 +4,17 @@ import AsyncSelect from "react-select/async";
 import type { SummaryLanguage } from "../types/weather";
 import { t } from "../lib/i18n";
 
+interface OptionType {
+  value: string;
+  label: string;
+}
+
 interface SearchBarProps {
   onSearch: (town: string, lat?: number, lon?: number) => void;
   loading: boolean;
   lang: SummaryLanguage;
-}
-
-interface OptionType {
-  value: string;
-  label: string;
+  selectedOption: OptionType | null;
+  onOptionChange: (option: OptionType | null) => void;
 }
 
 const customStyles = {
@@ -45,9 +47,7 @@ const customStyles = {
   })
 };
 
-export default function SearchBar({ onSearch, loading, lang }: SearchBarProps) {
-  const [selectedOption, setSelectedOption] = useState<OptionType | null>(null);
-
+export default function SearchBar({ onSearch, loading, lang, selectedOption, onOptionChange }: SearchBarProps) {
   async function loadOptions(inputValue: string): Promise<OptionType[]> {
     if (!inputValue || inputValue.trim().length < 2) return [];
     
@@ -89,7 +89,7 @@ export default function SearchBar({ onSearch, loading, lang }: SearchBarProps) {
           loadOptions={loadOptions}
           defaultOptions={false}
           value={selectedOption}
-          onChange={(option) => setSelectedOption(option as OptionType)}
+          onChange={(option) => onOptionChange(option as OptionType)}
           placeholder={t("searchPlaceholder", lang)}
           noOptionsMessage={() => lang === 'sw' ? "Hakuna matokeo" : "No results found"}
           loadingMessage={() => lang === 'sw' ? "Inatafuta..." : "Loading..."}
@@ -102,7 +102,7 @@ export default function SearchBar({ onSearch, loading, lang }: SearchBarProps) {
       <button
         type="submit"
         disabled={loading || !selectedOption}
-        className="rounded-xl bg-sky-deep px-5 py-2.5 mt-[2px] text-sm font-semibold text-cloud transition-colors hover:bg-sky-deep-hover disabled:cursor-not-allowed disabled:opacity-60 focus-visible:outline-3 focus-visible:outline-amber focus-visible:outline-offset-2"
+        className="cursor-pointer rounded-xl bg-sky-deep px-5 py-2.5 mt-[2px] text-sm font-semibold text-cloud transition-colors hover:bg-sky-deep-hover disabled:cursor-not-allowed disabled:opacity-60 focus-visible:outline-3 focus-visible:outline-amber focus-visible:outline-offset-2"
       >
         {loading ? t("searching", lang) : t("getForecast", lang)}
       </button>
