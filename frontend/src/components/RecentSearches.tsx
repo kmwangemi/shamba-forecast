@@ -1,9 +1,12 @@
 import type { RecentSearch } from "../lib/recentSearches";
+import type { SummaryLanguage } from "../types/weather";
+import { t } from "../lib/i18n";
 
 interface RecentSearchesProps {
   searches: RecentSearch[];
   onSelect: (town: string) => void;
   disabled: boolean;
+  lang: SummaryLanguage;
 }
 
 /**
@@ -11,12 +14,12 @@ interface RecentSearchesProps {
  * nothing if there's no history yet (e.g. Firebase not configured, or
  * first-ever visit).
  */
-export default function RecentSearches({ searches, onSelect, disabled }: RecentSearchesProps) {
+export default function RecentSearches({ searches, onSelect, disabled, lang }: RecentSearchesProps) {
   if (searches.length === 0) return null;
 
   return (
     <div className="flex flex-wrap items-center gap-2 text-sm text-ink-soft">
-      <span>Recent:</span>
+      <span>{t("recentSearches", lang)}:</span>
       {searches.map((search) => (
         <button
           key={search.id}

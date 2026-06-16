@@ -6,6 +6,7 @@ interface FetchForecastOptions {
   lang?: SummaryLanguage;
   units?: "metric" | "imperial";
   ai?: boolean;
+  days?: number;
 }
 
 /**
@@ -16,11 +17,12 @@ export async function fetchForecast(
   town: string,
   options: FetchForecastOptions = {}
 ): Promise<ForecastResponse> {
-  const { lang = "en", units = "metric", ai } = options;
+  const { lang = "en", units = "metric", ai, days = 7 } = options;
   const url = new URL("/api/forecast", API_BASE_URL);
   url.searchParams.set("town", town);
   url.searchParams.set("lang", lang);
   url.searchParams.set("units", units);
+  url.searchParams.set("days", String(days));
   if (ai !== undefined) {
     url.searchParams.set("ai", String(ai));
   }
@@ -42,11 +44,12 @@ export async function fetchForecast(
  * Fetch the forecast for the user's auto-detected location based on IP.
  */
 export async function fetchAutoLocation(
-  { lang = "en", units = "metric", ai = false }: FetchForecastOptions = {}
+  { lang = "en", units = "metric", ai = false, days = 7 }: FetchForecastOptions = {}
 ): Promise<ForecastResponse> {
   const url = new URL("/api/forecast/auto", API_BASE_URL);
   url.searchParams.set("lang", lang);
   url.searchParams.set("units", units);
+  url.searchParams.set("days", String(days));
   url.searchParams.set("ai", String(ai));
 
   const res = await fetch(url.toString());

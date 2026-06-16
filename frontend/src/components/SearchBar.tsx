@@ -1,11 +1,15 @@
 import { useState, type FormEvent } from "react";
 
+import type { SummaryLanguage } from "../types/weather";
+import { t } from "../lib/i18n";
+
 interface SearchBarProps {
   onSearch: (town: string) => void;
   loading: boolean;
+  lang: SummaryLanguage;
 }
 
-export default function SearchBar({ onSearch, loading }: SearchBarProps) {
+export default function SearchBar({ onSearch, loading, lang }: SearchBarProps) {
   const [value, setValue] = useState("");
 
   function handleSubmit(e: FormEvent<HTMLFormElement>) {
@@ -19,7 +23,7 @@ export default function SearchBar({ onSearch, loading }: SearchBarProps) {
     <form className="flex gap-2.5" onSubmit={handleSubmit}>
       <input
         type="text"
-        placeholder="Enter a town, e.g. Bomet"
+        placeholder={t("searchPlaceholder", lang)}
         value={value}
         onChange={(e) => setValue(e.target.value)}
         aria-label="Town name"
@@ -30,7 +34,7 @@ export default function SearchBar({ onSearch, loading }: SearchBarProps) {
         disabled={loading || !value.trim()}
         className="rounded-xl bg-sky-deep px-5 py-2.5 text-sm font-semibold text-cloud transition-colors hover:bg-sky-deep-hover disabled:cursor-not-allowed disabled:opacity-60 focus-visible:outline-3 focus-visible:outline-amber focus-visible:outline-offset-2"
       >
-        {loading ? "Searching…" : "Get forecast"}
+        {loading ? t("searching", lang) : t("getForecast", lang)}
       </button>
     </form>
   );
