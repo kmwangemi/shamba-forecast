@@ -2,6 +2,8 @@
 
 React + TypeScript + Vite + Tailwind CSS dashboard for the WeatherAI demo integration.
 
+🚀 **[Live Demo on Vercel](https://shamba-forecast.vercel.app)**
+
 ## Current Setup & Simulation Mode
 
 > [!IMPORTANT]

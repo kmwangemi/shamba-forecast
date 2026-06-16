@@ -2,6 +2,8 @@
 
 A hyper-local weather and farm guidance dashboard built to demonstrate a full-stack integration with the [WeatherAI API](https://weather-ai.co).
 
+🚀 **[A live deployment link showing the project in action hosted on Vercel](https://shamba-forecast.vercel.app)**
+
 This repository contains two primary components:
 1. A robust **Node/Express Backend** handling API requests, geocoding, and in-memory rate-limit caching.
 2. A beautiful, responsive **React/Vite Frontend** featuring dynamic maps, interactive charts, and i18n support.
