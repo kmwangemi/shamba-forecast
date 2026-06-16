@@ -7,6 +7,8 @@ interface FetchForecastOptions {
   units?: "metric" | "imperial";
   ai?: boolean;
   days?: number;
+  lat?: number;
+  lon?: number;
 }
 
 /**
@@ -17,7 +19,7 @@ export async function fetchForecast(
   town: string,
   options: FetchForecastOptions = {}
 ): Promise<ForecastResponse> {
-  const { lang = "en", units = "metric", ai, days = 7 } = options;
+  const { lang = "en", units = "metric", ai, days = 7, lat, lon } = options;
   const url = new URL("/api/forecast", API_BASE_URL);
   url.searchParams.set("town", town);
   url.searchParams.set("lang", lang);
@@ -25,6 +27,12 @@ export async function fetchForecast(
   url.searchParams.set("days", String(days));
   if (ai !== undefined) {
     url.searchParams.set("ai", String(ai));
+  }
+  if (lat !== undefined) {
+    url.searchParams.set("lat", String(lat));
+  }
+  if (lon !== undefined) {
+    url.searchParams.set("lon", String(lon));
   }
 
   const res = await fetch(url.toString());

@@ -5,6 +5,7 @@ import type { ForecastResponse, SummaryLanguage } from "./types/weather";
 import { t } from "./lib/i18n";
 import SearchBar from "./components/SearchBar";
 import CurrentConditions from "./components/CurrentConditions";
+import WeatherMap from "./components/WeatherMap";
 import ForecastStrip from "./components/ForecastStrip";
 import AiSummary from "./components/AiSummary";
 import StatusBanner from "./components/StatusBanner";
@@ -21,9 +22,17 @@ function App() {
   const [days, setDays] = useState(7);
   const [recent, setRecent] = useState<RecentSearch[]>([]);
   const [hasAutoFetched, setHasAutoFetched] = useState(false);
-  const [currentQuery, setCurrentQuery] = useState<{ type: 'town' | 'auto'; town?: string } | null>(null);
+  const [currentQuery, setCurrentQuery] = useState<{ type: 'town' | 'auto'; town?: string; lat?: number; lon?: number } | null>(null);
+  const [mapCoords, setMapCoords] = useState<[number, number] | null>(null);
 
   useEffect(() => {
+    // Try precise geolocation on mount
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (pos) => setMapCoords([pos.coords.latitude, pos.coords.longitude]),
+        () => {} // Silent fail, we'll fall back to IP auto-location
+      );
+    }
     getRecentSearches().then(setRecent);
     
     // Auto-fetch location on first load
@@ -46,7 +55,7 @@ function App() {
     
     setLoading(true);
     if (currentQuery.type === 'town' && currentQuery.town) {
-      fetchForecast(currentQuery.town, { lang, ai: useAi, days })
+      fetchForecast(currentQuery.town, { lang, ai: useAi, days, lat: currentQuery.lat, lon: currentQuery.lon })
         .then((result) => setData(result))
         .catch((err) => setError(err instanceof Error ? err.message : t("errorGeneric", lang)))
         .finally(() => setLoading(false));
@@ -58,12 +67,19 @@ function App() {
     }
   }, [lang, useAi, days]); // Deliberately omit currentQuery to avoid double-fetching on search
 
-  async function handleSearch(town: string) {
+  // Sync map coordinates when data arrives
+  useEffect(() => {
+    if (data?.location?.lat !== undefined && data?.location?.lon !== undefined) {
+      setMapCoords([data.location.lat, data.location.lon]);
+    }
+  }, [data]);
+
+  async function handleSearch(town: string, lat?: number, lon?: number) {
     setLoading(true);
     setError(null);
-    setCurrentQuery({ type: 'town', town });
+    setCurrentQuery({ type: 'town', town, lat, lon });
     try {
-      const result = await fetchForecast(town, { lang, ai: useAi, days });
+      const result = await fetchForecast(town, { lang, ai: useAi, days, lat, lon });
       setData(result);
       await recordSearch(town);
       setRecent(await getRecentSearches());
@@ -153,6 +169,12 @@ function App() {
         </div>
 
         <RecentSearches searches={recent} onSelect={handleSearch} disabled={loading} lang={lang} />
+
+        {mapCoords && (
+          <div className={loading ? "opacity-60 transition-opacity pointer-events-none" : "transition-opacity"}>
+            <WeatherMap lat={mapCoords[0]} lon={mapCoords[1]} />
+          </div>
+        )}
 
         {error && <StatusBanner type="error" message={error} />}
         {loading && <StatusBanner type="loading" message={t("fetching", lang)} />}

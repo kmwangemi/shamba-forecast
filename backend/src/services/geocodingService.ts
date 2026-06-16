@@ -48,8 +48,9 @@ export async function geocodeLocation(name: string): Promise<GeocodeResult> {
   }
 
   try {
+    const query = name.split(",")[0].trim();
     const res = await axios.get<OpenMeteoResponse>(GEOCODE_URL, {
-      params: { name: name.trim(), count: 1, language: "en", format: "json" },
+      params: { name: query, count: 1, language: "en", format: "json" },
       timeout: 5000,
     });
 
