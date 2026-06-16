@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { MapContainer, TileLayer, Marker, useMap } from 'react-leaflet';
+import { MapContainer, TileLayer, Marker, Tooltip, useMap } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
 
@@ -14,6 +14,7 @@ L.Marker.prototype.options.icon = redIcon;
 interface WeatherMapProps {
   lat: number;
   lon: number;
+  name?: string;
 }
 
 function MapUpdater({ lat, lon }: { lat: number, lon: number }) {
@@ -24,7 +25,7 @@ function MapUpdater({ lat, lon }: { lat: number, lon: number }) {
   return null;
 }
 
-export default function WeatherMap({ lat, lon }: WeatherMapProps) {
+export default function WeatherMap({ lat, lon, name }: WeatherMapProps) {
   if (lat === undefined || lon === undefined) return null;
 
   return (
@@ -39,7 +40,13 @@ export default function WeatherMap({ lat, lon }: WeatherMapProps) {
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
         />
-        <Marker position={[lat, lon]} />
+        <Marker key={`${lat}-${lon}`} position={[lat, lon]}>
+          {name && (
+            <Tooltip direction="top" offset={[0, -20]} opacity={1} permanent className="font-bold text-sm">
+              {name}
+            </Tooltip>
+          )}
+        </Marker>
         <MapUpdater lat={lat} lon={lon} />
       </MapContainer>
     </section>
