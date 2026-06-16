@@ -4,7 +4,7 @@ import { t } from "../lib/i18n";
 
 interface RecentSearchesProps {
   searches: RecentSearch[];
-  onSelect: (town: string) => void;
+  onSelect: (town: string, lat?: number, lon?: number) => void;
   disabled: boolean;
   lang: SummaryLanguage;
 }
@@ -24,7 +24,7 @@ export default function RecentSearches({ searches, onSelect, disabled, lang }: R
         <button
           key={search.id}
           type="button"
-          onClick={() => onSelect(search.town)}
+          onClick={() => onSelect(search.town, search.lat, search.lon)}
           disabled={disabled}
           className="rounded-full border border-border bg-cloud px-3 py-1 text-sm text-sky-deep transition-colors hover:border-leaf hover:bg-leaf-light disabled:cursor-not-allowed disabled:opacity-60"
         >

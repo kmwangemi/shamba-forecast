@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { fetchForecast, fetchAutoLocation } from "./lib/api";
 import { getRecentSearches, recordSearch, type RecentSearch } from "./lib/recentSearches";
 import type { ForecastResponse, SummaryLanguage } from "./types/weather";
@@ -7,30 +7,39 @@ import SearchBar from "./components/SearchBar";
 import CurrentConditions from "./components/CurrentConditions";
 import WeatherMap from "./components/WeatherMap";
 import ForecastStrip from "./components/ForecastStrip";
+import TemperatureChart from "./components/TemperatureChart";
 import AiSummary from "./components/AiSummary";
 import StatusBanner from "./components/StatusBanner";
 import RecentSearches from "./components/RecentSearches";
-
-const DEFAULT_TOWNS = ["Nairobi", "Bomet", "Eldoret", "Mombasa", "Kisumu"];
 
 function App() {
   const [data, setData] = useState<ForecastResponse | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [lang, setLang] = useState<SummaryLanguage>("en");
-  const [useAi, setUseAi] = useState(false);
+  const [useAi, setUseAi] = useState(true);
   const [days, setDays] = useState(7);
   const [recent, setRecent] = useState<RecentSearch[]>([]);
   const [hasAutoFetched, setHasAutoFetched] = useState(false);
   const [currentQuery, setCurrentQuery] = useState<{ type: 'town' | 'auto'; town?: string; lat?: number; lon?: number } | null>(null);
   const [mapCoords, setMapCoords] = useState<[number, number] | null>(null);
   const [searchOption, setSearchOption] = useState<{ value: string; label: string } | null>(null);
+  
+  const currentQueryRef = useRef(currentQuery);
+  useEffect(() => {
+    currentQueryRef.current = currentQuery;
+  }, [currentQuery]);
 
   useEffect(() => {
     // Try precise geolocation on mount
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
-        (pos) => setMapCoords([pos.coords.latitude, pos.coords.longitude]),
+        (pos) => {
+          // If the user has already manually searched by the time they click "Allow", ignore it.
+          if (currentQueryRef.current?.type !== 'town') {
+            setMapCoords([pos.coords.latitude, pos.coords.longitude]);
+          }
+        },
         () => {} // Silent fail, we'll fall back to IP auto-location
       );
     }
@@ -82,7 +91,7 @@ function App() {
     try {
       const result = await fetchForecast(town, { lang, ai: useAi, days, lat, lon });
       setData(result);
-      await recordSearch(town);
+      await recordSearch(town, lat, lon);
       setRecent(await getRecentSearches());
     } catch (err) {
       setError(err instanceof Error ? err.message : "Something went wrong");
@@ -92,8 +101,9 @@ function App() {
     }
   }
 
-  function handleSelectCity(town: string) {
-    setSearchOption({ value: JSON.stringify({ town }), label: town });
+  function handleSelectCity(town: string, lat?: number, lon?: number) {
+    setSearchOption({ value: JSON.stringify({ town, lat, lon }), label: town });
+    handleSearch(town, lat, lon);
   }
 
   return (
@@ -164,26 +174,11 @@ function App() {
           onOptionChange={setSearchOption}
         />
 
-        <div className="flex flex-wrap items-center gap-2 text-sm text-ink-soft">
-          <span>{t("tryPrompt", lang)}</span>
-          {DEFAULT_TOWNS.map((town) => (
-            <button
-              key={town}
-              type="button"
-              onClick={() => handleSelectCity(town)}
-              disabled={loading}
-              className="cursor-pointer rounded-full border border-border bg-cloud px-3 py-1 text-sm text-sky-deep transition-colors hover:border-leaf hover:bg-leaf-light disabled:cursor-not-allowed disabled:opacity-60"
-            >
-              {town}
-            </button>
-          ))}
-        </div>
-
         <RecentSearches searches={recent} onSelect={handleSelectCity} disabled={loading} lang={lang} />
 
         {mapCoords && (
           <div className={loading ? "opacity-60 transition-opacity pointer-events-none" : "transition-opacity"}>
-            <WeatherMap lat={mapCoords[0]} lon={mapCoords[1]} />
+            <WeatherMap lat={mapCoords[0]} lon={mapCoords[1]} name={data?.location?.name !== "Auto Location" ? data?.location?.name : "Nairobi"} />
           </div>
         )}
 
@@ -200,7 +195,8 @@ function App() {
             )}
             <CurrentConditions location={data.location} weather={data.weather} lang={lang} />
             <ForecastStrip weather={data.weather} lang={lang} />
-            <AiSummary weather={data.weather} lang={lang} />
+            <TemperatureChart weather={data.weather} lang={lang} />
+            {useAi && <AiSummary weather={data.weather} lang={lang} />}
           </>
         )}
 

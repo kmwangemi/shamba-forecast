@@ -16,6 +16,8 @@ const MAX_RESULTS = 5;
 export interface RecentSearch {
   id: string;
   town: string;
+  lat?: number;
+  lon?: number;
   searchedAt: Timestamp | null;
 }
 
@@ -23,12 +25,14 @@ export interface RecentSearch {
  * Record a search in Firestore. No-ops silently if Firebase isn't
  * configured, so this never blocks the main forecast flow.
  */
-export async function recordSearch(town: string): Promise<void> {
+export async function recordSearch(town: string, lat?: number, lon?: number): Promise<void> {
   if (!isFirebaseConfigured || !db) return;
 
   try {
     await addDoc(collection(db, COLLECTION), {
       town,
+      lat: lat ?? null,
+      lon: lon ?? null,
       searchedAt: serverTimestamp(),
     });
   } catch (err) {
@@ -54,6 +58,8 @@ export async function getRecentSearches(): Promise<RecentSearch[]> {
     return snapshot.docs.map((doc) => ({
       id: doc.id,
       town: doc.data().town as string,
+      lat: doc.data().lat as number | undefined,
+      lon: doc.data().lon as number | undefined,
       searchedAt: (doc.data().searchedAt as Timestamp) ?? null,
     }));
   } catch (err) {
