@@ -24,6 +24,7 @@ function App() {
   const [hasAutoFetched, setHasAutoFetched] = useState(false);
   const [currentQuery, setCurrentQuery] = useState<{ type: 'town' | 'auto'; town?: string; lat?: number; lon?: number } | null>(null);
   const [mapCoords, setMapCoords] = useState<[number, number] | null>(null);
+  const [searchOption, setSearchOption] = useState<{ value: string; label: string } | null>(null);
 
   useEffect(() => {
     // Try precise geolocation on mount
@@ -91,6 +92,10 @@ function App() {
     }
   }
 
+  function handleSelectCity(town: string) {
+    setSearchOption({ value: JSON.stringify({ town }), label: town });
+  }
+
   return (
     <div className="mx-auto flex max-w-3xl flex-col gap-6 px-5 pb-12 pt-6">
       <header className="flex flex-wrap items-center justify-between gap-4 border-b border-border pb-4">
@@ -107,7 +112,20 @@ function App() {
         </div>
         <div className="flex gap-4">
           <div className="flex flex-col gap-1 text-sm text-ink-soft">
-            <label htmlFor="ai-toggle">{t("aiAdvice", lang)}</label>
+            <label htmlFor="days-select" className="cursor-pointer">{t("forecastDays", lang)}</label>
+            <select
+              id="days-select"
+              value={days}
+              onChange={(e) => setDays(Number(e.target.value))}
+              className="cursor-pointer rounded-lg border border-border bg-cloud px-2 py-1.5 text-sm text-ink"
+            >
+              <option value={1}>{t("day1", lang)}</option>
+              <option value={3}>{t("day3", lang)}</option>
+              <option value={7}>{t("day7", lang)}</option>
+            </select>
+          </div>
+          <div className="flex flex-col gap-1 text-sm text-ink-soft">
+            <label htmlFor="ai-toggle" className="cursor-pointer">{t("aiAdvice", lang)}</label>
             <div className="flex items-center h-8">
               <label className="relative inline-flex items-center cursor-pointer">
                 <input 
@@ -123,35 +141,28 @@ function App() {
             </div>
           </div>
           <div className="flex flex-col gap-1 text-sm text-ink-soft">
-            <label htmlFor="lang-select">{t("language", lang)}</label>
+            <label htmlFor="lang-select" className="cursor-pointer">{t("language", lang)}</label>
             <select
               id="lang-select"
               value={lang}
               onChange={(e) => setLang(e.target.value as SummaryLanguage)}
-              className="rounded-lg border border-border bg-cloud px-2 py-1.5 text-sm text-ink"
+              className="cursor-pointer rounded-lg border border-border bg-cloud px-2 py-1.5 text-sm text-ink"
             >
               <option value="en">English</option>
               <option value="sw">Kiswahili</option>
-            </select>
-          </div>
-          <div className="flex flex-col gap-1 text-sm text-ink-soft">
-            <label htmlFor="days-select">{t("forecastDays", lang)}</label>
-            <select
-              id="days-select"
-              value={days}
-              onChange={(e) => setDays(Number(e.target.value))}
-              className="rounded-lg border border-border bg-cloud px-2 py-1.5 text-sm text-ink"
-            >
-              <option value={1}>{t("day1", lang)}</option>
-              <option value={3}>{t("day3", lang)}</option>
-              <option value={7}>{t("day7", lang)}</option>
             </select>
           </div>
         </div>
       </header>
 
       <main className="flex flex-col gap-5">
-        <SearchBar onSearch={handleSearch} loading={loading} lang={lang} />
+        <SearchBar 
+          onSearch={handleSearch} 
+          loading={loading} 
+          lang={lang} 
+          selectedOption={searchOption}
+          onOptionChange={setSearchOption}
+        />
 
         <div className="flex flex-wrap items-center gap-2 text-sm text-ink-soft">
           <span>{t("tryPrompt", lang)}</span>
@@ -159,16 +170,16 @@ function App() {
             <button
               key={town}
               type="button"
-              onClick={() => handleSearch(town)}
+              onClick={() => handleSelectCity(town)}
               disabled={loading}
-              className="rounded-full border border-border bg-cloud px-3 py-1 text-sm text-sky-deep transition-colors hover:border-leaf hover:bg-leaf-light disabled:cursor-not-allowed disabled:opacity-60"
+              className="cursor-pointer rounded-full border border-border bg-cloud px-3 py-1 text-sm text-sky-deep transition-colors hover:border-leaf hover:bg-leaf-light disabled:cursor-not-allowed disabled:opacity-60"
             >
               {town}
             </button>
           ))}
         </div>
 
-        <RecentSearches searches={recent} onSelect={handleSearch} disabled={loading} lang={lang} />
+        <RecentSearches searches={recent} onSelect={handleSelectCity} disabled={loading} lang={lang} />
 
         {mapCoords && (
           <div className={loading ? "opacity-60 transition-opacity pointer-events-none" : "transition-opacity"}>
